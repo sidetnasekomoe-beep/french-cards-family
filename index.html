@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>French Cards</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{font-family:system-ui,sans-serif;background:#f7f7fb;color:#1f2937}*{box-sizing:border-box}body{margin:0}.wrap{max-width:860px;margin:auto;padding:18px}.top,.tabs,.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top{justify-content:space-between}.panel{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:16px;margin-top:14px}.hidden{display:none!important}button,label.btn,select,input,textarea{font:inherit}button,label.btn{border:1px solid #d1d5db;background:white;border-radius:12px;padding:10px 14px;min-height:44px;cursor:pointer}.primary{background:#4f46e5!important;color:white;border-color:#4f46e5!important}.full{width:100%}.muted{color:#6b7280;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{min-height:240px;font-size:32px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center}.photo{border:2px dashed #c7c9d1;border-radius:16px;padding:18px;text-align:center}.photo input{display:none}.pair{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:8px 0}.pair input,input,select,textarea{padding:10px;border:1px solid #d1d5db;border-radius:10px}.progress{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin:10px 0}.progress>div{height:100%;background:#4f46e5;width:0}.deck{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:10px 0}.word{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #eee;padding:9px 0}.word:first-of-type{border-top:0}.ok{color:#047857}.bad{color:#b91c1c}.pill{padding:3px 8px;border-radius:999px;background:#eef2ff;font-size:12px}@media(max-width:600px){.grid,.pair{grid-template-columns:1fr}.pair button{width:100%}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div><h2 style="margin:0">French Cards</h2><div class="muted">Домашние задания · Nederlands ↔ Français</div></div><span id="sync" class="pill">Подключаю облако…</span></div>
+<div class="tabs" style="margin-top:14px"><button data-tab="cards" class="primary">Карточки</button><button data-tab="write">Писать</button><button data-tab="photo">Добавить по фото</button><button data-tab="sets">Наборы</button></div>
+
+<section id="cards" class="panel">
+<div class="grid">
+<label><span class="muted">Что тренировать</span><select id="cardSet" class="full"></select></label>
+<label><span class="muted">Направление</span><select id="cardDir" class="full"><option value="nlfr">Nederlands → Français</option><option value="frnl">Français → Nederlands</option></select></label>
+</div>
+<div id="cardInfo" class="muted" style="margin:12px 0"></div>
+<button id="card" class="panel card full"></button>
+<div class="grid"><button id="prev">← Назад</button><button id="next" class="primary">Дальше →</button></div>
+</section>
+
+<section id="write" class="panel hidden">
+<div class="grid">
+<label><span class="muted">Что тренировать</span><select id="quizSet" class="full"></select></label>
+<label><span class="muted">Направление</span><select id="quizDir" class="full"><option value="nlfr">Nederlands → Français</option><option value="frnl">Français → Nederlands</option></select></label>
+</div>
+<h2 id="prompt"></h2>
+<form id="quiz"><input id="answer" class="full" autocomplete="off" placeholder="Введите ответ"><button class="primary full" style="margin-top:10px">Проверить</button></form>
+<div id="feedback" style="min-height:28px;margin-top:10px"></div>
+<button id="nextQ" class="full hidden">Следующее →</button>
+</section>
+
+<section id="photo" class="panel hidden">
+<h3 style="margin-top:0">Новое домашнее задание</h3>
+<label><span class="muted">Название набора</span><input id="setName" class="full"></label>
+<div class="photo" style="margin-top:12px">
+<b>Добавьте страницу учебника</b>
+<div class="muted">Текст будет распознан автоматически. Можно выбрать несколько фото сразу.</div>
+<div class="grid" style="margin-top:12px">
+<label class="btn primary">📷 Сфотографировать<input id="camera" type="file" accept="image/*" capture="environment"></label>
+<label class="btn">🖼️ Загрузить фото<input id="gallery" type="file" accept="image/*" multiple></label>
+</div>
+<div id="files" class="muted" style="margin-top:8px"></div>
+</div>
+<div id="ocrStatus" class="muted" style="margin-top:12px"></div>
+<div id="progress" class="progress hidden"><div></div></div>
+<div id="review" class="hidden"><h3>Проверьте найденные слова</h3><div id="pairs"></div><button id="savePairs" class="primary full">Создать набор</button></div>
+<details style="margin-top:14px"><summary>Добавить вручную</summary><div class="muted">Одна строка: Nederlands | Français</div><textarea id="manual" class="full" style="min-height:100px"></textarea><button id="saveManual" class="full">Создать набор</button></details>
+</section>
+
+<section id="sets" class="panel hidden"><div id="setsList"></div></section>
+</div>
+
+<script>
+const seed=[['dag','bonjour'],['goedenavond','bonsoir'],['hoi','salut'],['tot ziens','au revoir'],['tot gauw','à bientôt'],['tot morgen','à demain'],['tot later','à plus'],['hoe gaat het?','ça va ?'],['niet slecht','pas mal'],['bedankt','merci'],['ja','oui'],['nee','non'],['de jongen','le garçon'],['het meisje','la fille'],['ik heet (heten)','je m’appelle (s’appeler)'],['ik woon (wonen)','j’habite (habiter)'],['hier is, hier zijn','voici'],['daar is, daar zijn','voilà'],['meneer','monsieur'],['mevrouw','madame'],['er is, er zijn','il y a'],['het is, dat is','c’est'],['Frans','français(e)'],['Nederlands','néerlandais(e)'],['waar?','où ?'],['de wijk','le quartier'],['de school','l’école (f)'],['het land','le pays'],['de hobby, passie','la passion'],['de stad','la ville'],['de inwoner','l’habitant (m)'],['de straat','la rue'],['in','dans'],['mooi, leuk','joli'],['de middelbare school (klas 1, 2, 3)','le collège'],['ik ben dol op (dol zijn op)','j’adore (adorer)'],['en jij?','et toi ?'],['de klas','la classe'],['de vriend','l’ami (m)'],['ook','aussi'],['Frankrijk','la France'],['groot','grand']];
+let state={sets:[{id:'hw1',name:'Домашнее задание 1',words:seed}],stats:{}},idx=0,flip=false,q=0,answered=false,cloud=false,saving=false;
+try{const x=JSON.parse(localStorage.getItem('frcards_sets')||'null');if(x)state=x}catch{}
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const norm=s=>String(s).trim().toLowerCase().replace(/[?.!,;:]+$/,'').replace(/[’‘`]/g,"'").replace(/\s+/g,' ');
+const key=p=>norm(p[0])+'|||'+norm(p[1]);
+function sync(t,bad=false){$('#sync').textContent=t;$('#sync').style.background=bad?'#fee2e2':'#dcfce7'}
+async function save(){localStorage.setItem('frcards_sets',JSON.stringify(state));renderSelectors();renderSets();if(!cloud||saving)return;saving=true;try{const r=await fetch('/api/state',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({state})});if(!r.ok)throw 0;sync('Синхронизировано')}catch{sync('Нет синхронизации',true)}finally{saving=false}}
+async function load(){try{const r=await fetch('/api/state',{cache:'no-store'}),j=await r.json();if(j.state){state=j.state;localStorage.setItem('frcards_sets',JSON.stringify(state))}cloud=true;sync('Синхронизировано');renderAll()}catch{sync('Оффлайн — данные на телефоне',true)}}
+function nextName(){const n=Math.max(0,...state.sets.map(s=>(+(s.name.match(/домашнее задание\s+(\d+)/i)||[])[1]||0)))+1;return 'Домашнее задание '+n}
+function pool(mode){let a=state.sets.flatMap(s=>s.words.map(p=>({p,set:s})));if(mode==='all')return a;if(mode==='mistakes')return a.filter(x=>((state.stats[key(x.p)]||{}).wrong||0)>((state.stats[key(x.p)]||{}).right||0));const s=state.sets.find(x=>x.id===mode);return s?s.words.map(p=>({p,set:s})) : []}
+function pair(x,d){return d==='nlfr'?{a:x.p[0],b:x.p[1]}:{a:x.p[1],b:x.p[0]}}
+function renderSelectors(){for(const id of ['cardSet','quizSet']){const e=$('#'+id),old=e.value||'all';e.innerHTML='<option value="all">Все слова</option><option value="mistakes">Только слова с ошибками</option>';state.sets.forEach(s=>e.add(new Option(s.name,s.id)));e.value=[...e.options].some(o=>o.value===old)?old:'all'}$('#setName').value=$('#setName').value||nextName()}
+function renderCard(){const a=pool($('#cardSet').value);if(idx>=a.length)idx=0;if(!a.length){$('#card').textContent='Нет слов';$('#cardInfo').textContent='';return}const p=pair(a[idx],$('#cardDir').value);$('#card').textContent=flip?p.b:p.a;$('#cardInfo').textContent=`${idx+1} / ${a.length} · ${a[idx].set.name} · нажмите карточку, чтобы перевернуть`}
+function renderQuiz(){const a=pool($('#quizSet').value);if(q>=a.length)q=0;if(!a.length){$('#prompt').textContent='Нет слов';return}const p=pair(a[q],$('#quizDir').value);$('#prompt').textContent=p.a;$('#answer').value='';$('#feedback').textContent='';$('#nextQ').classList.add('hidden');answered=false}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function renderSets(){const e=$('#setsList');e.innerHTML='';state.sets.forEach((s,si)=>{const d=document.createElement('div');d.className='deck';d.innerHTML=`<div class="top"><div><b>${esc(s.name)}</b><div class="muted">${s.words.length} слов</div></div><button class="del">Удалить</button></div>`;d.querySelector('.del').onclick=()=>{if(confirm('Удалить набор?')){state.sets.splice(si,1);save();renderAll()}};s.words.forEach((p,wi)=>{const w=document.createElement('div');w.className='word';w.innerHTML=`<div><b>${esc(p[0])}</b><br><span class="muted">${esc(p[1])}</span></div><button>×</button>`;w.querySelector('button').onclick=()=>{s.words.splice(wi,1);save();renderAll()};d.append(w)});e.append(d)})}
+function renderAll(){renderSelectors();renderCard();renderQuiz();renderSets()}
+function show(tab){$$('[data-tab]').forEach(b=>b.classList.toggle('primary',b.dataset.tab===tab));['cards','write','photo','sets'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==tab));if(tab==='write')renderQuiz();if(tab==='sets')renderSets()}
+$$('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+$('#card').onclick=()=>{flip=!flip;renderCard()};$('#next').onclick=()=>{idx=(idx+1)%Math.max(pool($('#cardSet').value).length,1);flip=false;renderCard()};$('#prev').onclick=()=>{const n=Math.max(pool($('#cardSet').value).length,1);idx=(idx-1+n)%n;flip=false;renderCard()};$('#cardSet').onchange=()=>{idx=0;flip=false;renderCard()};$('#cardDir').onchange=()=>{idx=0;flip=false;renderCard()};$('#quizSet').onchange=()=>{q=0;renderQuiz()};$('#quizDir').onchange=()=>{q=0;renderQuiz()};
+$('#quiz').onsubmit=e=>{e.preventDefault();if(answered)return;const a=pool($('#quizSet').value);if(!a.length)return;const p=pair(a[q],$('#quizDir').value),ans=$('#answer').value;if(!ans.trim())return;const ok=norm(ans)===norm(p.b),k=key(a[q].p);state.stats[k]=state.stats[k]||{right:0,wrong:0};state.stats[k][ok?'right':'wrong']++;$('#feedback').textContent=ok?'✓ Правильно!':'✗ Правильно: '+p.b;$('#feedback').className=ok?'ok':'bad';answered=true;$('#nextQ').classList.remove('hidden');save()};$('#nextQ').onclick=()=>{q=(q+1)%Math.max(pool($('#quizSet').value).length,1);renderQuiz();$('#answer').focus()};
+function parse(text){const out=[];for(const line of text.split(/\n/).map(x=>x.trim()).filter(x=>x.length>2)){const p=line.split(/\s{2,}|\t|\s[-–—]\s/).map(x=>x.trim()).filter(Boolean);if(p.length>=2&&/[A-Za-zÀ-ÿ]/.test(p[0])&&/[A-Za-zÀ-ÿ]/.test(p[1]))out.push([p[0],p.slice(1).join(' ')])}return out}
+function showPairs(a){const e=$('#pairs');e.innerHTML='';a.forEach(p=>{const r=document.createElement('div');r.className='pair';r.innerHTML='<input class="a"><input class="b"><button>×</button>';r.querySelector('.a').value=p[0];r.querySelector('.b').value=p[1];r.querySelector('button').onclick=()=>r.remove();e.append(r)});$('#review').classList.remove('hidden')}
+async function process(files){files=[...files].filter(f=>f.type.startsWith('image/'));if(!files.length)return;$('#files').textContent=files.length===1?files[0].name:`${files.length} фото выбрано`;$('#progress').classList.remove('hidden');let all=[];try{for(let i=0;i<files.length;i++){const res=await Tesseract.recognize(files[i],'nld+fra+eng',{logger:m=>{if(m.status==='recognizing text'){const pct=Math.round(((i+m.progress)/files.length)*100);$('#progress div').style.width=pct+'%';$('#ocrStatus').textContent=`Распознаю фото ${i+1} из ${files.length}: ${Math.round(m.progress*100)}%`}}});all.push(...parse(res.data.text))}const uniq=[];all.forEach(p=>{if(!uniq.some(x=>norm(x[0])===norm(p[0])&&norm(x[1])===norm(p[1])))uniq.push(p)});$('#ocrStatus').textContent=uniq.length?`Найдено ${uniq.length} возможных пар. Проверьте их ниже.`:'Пары автоматически не найдены. Можно добавить вручную.';showPairs(uniq)}catch(e){$('#ocrStatus').textContent='Не удалось распознать фото. Попробуйте другой снимок.'}finally{$('#progress').classList.add('hidden');$('#camera').value='';$('#gallery').value=''}}
+$('#camera').onchange=e=>process(e.target.files);$('#gallery').onchange=e=>process(e.target.files);
+function createSet(arr){const clean=arr.map(p=>[String(p[0]||'').trim(),String(p[1]||'').trim()]).filter(p=>p[0]&&p[1]);if(!clean.length)return alert('Нет пар слов');state.sets.push({id:'hw'+Date.now(),name:$('#setName').value.trim()||nextName(),words:clean});$('#setName').value='';$('#review').classList.add('hidden');save();renderAll();show('sets')}
+$('#savePairs').onclick=()=>createSet([...$('#pairs').children].map(r=>[r.querySelector('.a').value,r.querySelector('.b').value]));$('#saveManual').onclick=()=>createSet($('#manual').value.split(/\n/).map(x=>x.split('|')).filter(x=>x.length>=2).map(x=>[x[0],x.slice(1).join('|')]));
+renderAll();load();
+</script>
+</body></html>
